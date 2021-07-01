@@ -3,7 +3,7 @@ Unweighted VIKOR method
 
 The Un-Weighted Technique for Order Preference by Similarity to Ideal Solution (uwVIKOR) ranks decision alternatives based on the classical VIKOR approach, however this method does not require the introduction of a priori weights.
 
-As a consequence of working with unknown weights, the method does not take into account the relative importance of criteria. Then, the positive ideal solution (PIS) and a negative ideal solution (NIS) varies depending on the conditions of problem. Hence, the functions of relative proximity (:math:`Q`) is an operator which are optimized as two mathematical programming problems of maximize (:math:`Q^L`) and minimize (:math:`Q^U`), considering weights as variables. Finally, per each alternative, we get the intervals [:math:`Q^L`, :math:`Q^U`], and so [:math:`S^L`, :math:`S^U`] and [:math:`R^L`, :math:`R^U`], hence we can rank them in accordance with a determined comparison method.
+As a consequence of working with unknown weights, the method does not take into account the relative importance of criteria. Then, the positive ideal solution (PIS) and a negative ideal solution (NIS) varies depending on the conditions of problem. Hence, the functions of relative proximity (Q) is an operator which are optimized as two mathematical programming problems of maximize (Q_L) and minimize (Q_U), considering weights as variables. Finally, per each alternative, we get the intervals [Q_L, Q_U], and so [S_L, S_U] and [R_L, R_U], hence we can rank them in accordance with a determined comparison method.
 
 Installation
 ======================
@@ -66,4 +66,4 @@ uwVIKOR is implemented in order to manage **Pandas** DataFrames as input data wh
 Optimization in Python
 ======================
 
-This library uses the `minimize <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html>`_ function of the scipy.optimize module to carry out the optimization problems. In particular, :math:`Q^L` and :math:`Q^U` are obtained one by one, thus we can apply the **SLSQP** method.
+This library uses the `minimize <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html>`_ function of the scipy.optimize module to carry out the optimization problems. In particular, Q_L and Q_U are obtained one by one, thus we can apply the **SLSQP** method.
