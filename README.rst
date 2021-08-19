@@ -1,7 +1,7 @@
 Unweighted VIKOR method
 =======================
 
-The Un-Weighted Technique for Order Preference by Similarity to Ideal Solution (uwVIKOR) ranks decision alternatives based on the classical VIKOR approach, however this method does not require the introduction of a priori weights.
+The Un-Weighted VIseKriterijumska Optimizacija I Kompromisno Resenje (uwVIKOR) ranks decision alternatives based on the classical VIKOR approach, however this method does not require the introduction of a priori weights.
 
 As a consequence of working with unknown weights, the method does not take into account the relative importance of criteria. Then, the positive ideal solution (PIS) and a negative ideal solution (NIS) varies depending on the conditions of problem. Hence, the functions of relative proximity (Q) is an operator which are optimized as two mathematical programming problems of maximize (Q_L) and minimize (Q_U), considering weights as variables. Finally, per each alternative, we get the intervals [Q_L, Q_U], and so [S_L, S_U] and [R_L, R_U], hence we can rank them in accordance with a determined comparison method.
 
