@@ -10,11 +10,15 @@ Installation
 
 You can install the uwVIKOR library from GitHub::
 
+.. code:: sh
+
     git clone https://github.com/Aaron-AALG/uwVIKOR.git
     python3 -m pip install -e uwVIKOR
 
 
 You can also install it directly from PyPI::
+
+.. code:: sh
 
     pip install uwVIKOR
 
@@ -46,6 +50,8 @@ Example
 ======================
 
 uwVIKOR is implemented in order to manage **Pandas** DataFrames as input data which will be converted to **NumPy** arrays. Here is an example in which we only use three alternatives and four criteria::
+
+.. code:: python
 
     import pandas as pd
     import numpy as np
