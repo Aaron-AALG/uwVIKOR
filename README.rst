@@ -8,7 +8,7 @@ As a consequence of working with unknown weights, the method does not take into 
 Installation
 ======================
 
-You can install the uwVIKOR library from GitHub::
+You can install the uwVIKOR library from GitHub:
 
 .. code:: sh
 
@@ -16,7 +16,7 @@ You can install the uwVIKOR library from GitHub::
     python3 -m pip install -e uwVIKOR
 
 
-You can also install it directly from PyPI::
+You can also install it directly from PyPI:
 
 .. code:: sh
 
@@ -49,7 +49,7 @@ Dictionary which contains three keys:
 Example
 ======================
 
-uwVIKOR is implemented in order to manage **Pandas** DataFrames as input data which will be converted to **NumPy** arrays. Here is an example in which we only use three alternatives and four criteria::
+uwVIKOR is implemented in order to manage **Pandas** DataFrames as input data which will be converted to **NumPy** arrays. Here is an example in which we only use three alternatives and four criteria:
 
 .. code:: python
 
