@@ -1,8 +1,13 @@
-import pandas as pd
-from numpy import *
+import numpy as np
 import scipy.optimize as opt
 
 def requirements(data, directions, L, U, v, w0, display):
+    '''
+    UW-VIKOR requirements
+    ---------------------
+
+    Checks whether the input parameters satisfy the UW-VIKOR hypothesis.
+    '''
     # data requirements
     if len(data.shape) < 2:
         raise ValueError('[!] data must be matrix-shaped')
@@ -33,7 +38,7 @@ def requirements(data, directions, L, U, v, w0, display):
     
     # v requirements
     if any([v < 0, v > 1]):
-        raise ValueError('[!] Te utility parameter "v" must belong to (0,1)')
+        raise ValueError('[!] Te utility parameter "v" must belong to [0,1]')
     
     # w0 requirements
     if len(w0) > 0:
@@ -49,139 +54,194 @@ def requirements(data, directions, L, U, v, w0, display):
         raise ValueError('[!] "display" must be boolean')
     return
 
-def norm(x, w, p, n):
-    # VIKOR data normalization
-    z = array(w)*(array(p) - array(x))/(array(p) - array(n))
-    return z
+def VIKOR_normalization(data, w, PIS, NIS):
+    '''
+    VIKOR normalization
+    -------------------
 
-def get_ideals(data, directions):
-    pos_max = [int(i == 'max') for i in directions]
-    pos_min = [int(i == 'min') for i in directions]
-    col_max = data.apply(lambda z: max(z))
-    col_min = data.apply(lambda z: min(z))
-    P = array(col_max)*array(pos_max) + array(col_min)*array(pos_min)
-    N = array(col_max)*(1-array(pos_max)) + array(col_min)*(1-array(pos_min))
-    return P, N
+    Normalize data as the original VIKOR method.
+    '''
+    data_normalized = w * (PIS - data) / (PIS - NIS)
+    return data_normalized
+
+def VIKOR_ideals(data, directions):
+    '''
+    VIKOR ideal solutions
+    ---------------------
+
+    Extraction of the positive/negative solutions of the decision matrix.
+    '''
+    # Binary arrays with the indexes
+    idx_max = np.array([int(i == 'max') for i in directions])
+    idx_min = np.array([int(i == 'min') for i in directions])
+    # Max/Min elements per each criteria, i.e. per column.
+    col_max = data.max(axis=0)
+    col_min = data.min(axis=0)
+    # Compute ideal solution
+    PIS = col_max * idx_max + col_min * idx_min
+    NIS = col_max * (1 - idx_max) + col_min * (1 - idx_min)
+    return PIS, NIS
 
 def initial_weights(w0, L, U, J):
+    '''
+    Build initial wegihts for the optimization problem
+    -----
+    '''
     if len(w0) == 0:
-        w = 1/(J-2)*(1-L-U)
+        w = 1 / (J-2) * (1 - L - U)
     else:
         w = w0
     return w
 
-def S(data, w, P, N):
-    # S score according to the Manhattan metric
-    s = data.sum(axis=1)
-    return s
+def S_score(data, w, P, N):
+    '''
+    VIKOR S-score
+    -------------
 
-def R(data, w, P, N):
-    # R score according to the Chebyshev metric
-    r = data.max(axis=1)
-    return r
+    S-score according to the Manhattan metric for the decision matrix.
+    '''
+    s_score = data.sum(axis=1)
+    return s_score
 
-def Q(data, w, P, N, v):
+def R_score(data, w, P, N):
+    '''
+    VIKOR R-score
+    -------------
+
+    R-score according to the Chebyshev metric for the decision matrix.
+    '''
+    r_score = data.max(axis=1)
+    return r_score
+
+def Q_score(data, w, P, N, v):
+    '''
+    VIKOR Q-score
+    -------------
+
+    Q-score of the VIKOR method.
+    '''
     # S score
-    s = data.sum(axis=1)
-    s_min = min(s)
-    s_max = max(s)
+    s = S_score(data, w, P, N)
+    s_min = np.min(s)
+    s_max = np.max(s)
     # R score
-    r = data.max(axis=1)
-    r_min = min(r)
-    r_max = max(r)
-    # Q score as the convex lineal combination of S and R
-    q = v*(s-s_min)/(s_max-s_min)+(1-v)*(r-r_min)/(r_max-r_min)
+    r = R_score(data, w, P, N)
+    r_min = np.min(r)
+    r_max = np.max(r)
+    # Q score as the convex max-min combination of S and R
+    q = v * (s - s_min) / (s_max - s_min) + (1-v) * (r - r_min) / (r_max - r_min)
     return q
 
-def Q_i(w, data, P, N, v, i, mode):
+def UWVIKOR_objective_function(w, data, P, N, v, i, mode):
+    '''
+    Objective function VIKOR Q-score
+    -------------
+
+    Q-score for the ith alternative in order to optimize it for the UW-VIKOR method.
+    '''
+    # Normalization
+    norm_data = VIKOR_normalization(data, w, P, N)
     # Objective function
-    norm_data = norm(data, w, P, N)
-    q = Q(norm_data, w, P, N, v)
+    q = Q_score(norm_data, w, P, N, v)
     if mode == 'min':
         q_i = q[i]
     else:
         q_i = -q[i]
     return q_i
 
-def optimize_VIKOR(data, w, P, N, v, L, U, I, J, display, optimal_mode):
-    
+def optimize_VIKOR(data, data_norm, w0, P, N, v, L, U, I, J, display, optimal_mode):
+    '''
+    Optimize the Q-scores of the VIKOR method
+    -------------
+
+    Optimization (min/max) of theQ-score per each alternative.
+    '''
+    # Define bounds and constraints of the optimization problem
     bounds = [(l,u) for l, u in zip(L, U)]
     constraints = ({'type': 'ineq', 'fun': lambda w: 1-sum(w)},
                    {'type': 'ineq', 'fun': lambda w: sum(w)-1},)
-    data_norm = norm(data, w, P, N)
-
-    # Optimizing the Q-score according to the optimal_mode
-    sol_opt = []
+    # Optimizing the Q-score according to the optimal_mode and per each alternative of the problem
+    optimal_solution = []
     for i in range(I):
-        id_max = argmax(data_norm[i])
-        id_min = argmin(data_norm[i])
-        w0 = 1/(J-2)*(1-L-U)
+        # Determine an "appropriate" initial weights
+        id_max = data_norm[i].argmax()
+        id_min = data_norm[i].argmin()
         if optimal_mode == 'max':
             w0[id_max] = U[id_max]
             w0[id_min] = L[id_min]
         elif optimal_mode == 'min':
             w0[id_max] = L[id_max]
             w0[id_min] = U[id_min]
-        opt_i = opt.minimize(fun = Q_i,
+        # Optimize the Q[i] score
+        opt_i = opt.minimize(fun = UWVIKOR_objective_function,
                             x0 = w0,
                             args = (data, P, N, v, i, optimal_mode),
                             method = 'SLSQP',
                             bounds = bounds,
                             constraints =  constraints,
                             tol = 10**(-9),
-                            options = {'disp': display})
+                            options = {'disp': display},
+                            )
         if optimal_mode == 'max':
-            opt_i.fun = -opt_i.fun
-        sol_opt.append(opt_i)
+            opt_i.fun = - opt_i.fun
+        optimal_solution.append(opt_i)
+    # Store the scores and the optimal weights
     s = []
     r = []
     q = []
     w = []
-    i = 0
-    for sol in sol_opt:
-        data_norm = norm(data, sol.x, P, N)
-        s.append(S(data_norm, sol.x, P, N)[i])
-        r.append(R(data_norm, sol.x, P, N)[i])
+    for i, sol in enumerate(optimal_solution):
+        data_norm = VIKOR_normalization(data, sol.x, P, N)
+        s.append(S_score(data_norm, sol.x, P, N)[i])
+        r.append(R_score(data_norm, sol.x, P, N)[i])
         q.append(sol.fun)
         w.append(sol.x)
-        i += 1
     return s, r, q, w
 
-def uwVIKOR(data, directions, L, U, v=0.5, w0=[], display = False):
+def uwVIKOR(data, directions, L, U, v = 0.5, w0 = [], display = False):
     """
-    uwVIKOR method
+    Unweighted VIKOR method (UW-VIKOR)
+    ==================================
+
     Input:
-        data: dataframe which contains the alternatives and the criteria.
+    ------
+        data: matrix which contains the alternatives and the criteria.
         directions: array with the optimal direction of the criteria.
         L: array with the lower bounds of the weigths.
         U: array with the upper bounds of the weigths.
-        v: value of the utility parameter. (By default v = 0.5)
-        w0: array with the initial guess of the weights
-        display: logical argument to indicate whether to show print convergence messages or not. (By default display = False)
+        v: value of the utility parameter (By default v = 0.5).
+        w0: array with the initial guess of the weights (By default w0 is empty).
+        display: logical argument to indicate whether to show print convergence messages or not (By default display = False).
+
     Output:
+    -------
         List which contains three keys.
             Ranking: List with S, R and Q scores in regard of the optimal weights.
             Weights_min: List with the weights that minimizes the Q score.
             Weights_max: List with the weights that maximizes the Q score.
     """
     # Check whether the data input verifies the basic requirements
+    data = np.array(data)
+    I, J = data.shape
     requirements(data, directions, L, U, v, w0, display)
 
     # 1st step: Get PIS and NIS elements
-    I = len(data.index)
-    J = len(data.columns)
-    P, N = get_ideals(data, directions)
+    PIS, NIS = VIKOR_ideals(data, directions)
     w0 = initial_weights(w0, L, U, J)
 
-    # 2nd step: Optimize Q score and return their associate S and R scores with the weights
-    s_min, r_min, q_min, w_min = optimize_VIKOR(data, w0, P, N, v, L, U, I, J, display, optimal_mode = 'min')
-    s_max, r_max, q_max, w_max = optimize_VIKOR(data, w0, P, N, v, L, U, I, J, display, optimal_mode = 'max')
+    # 2nd step: Normalize data as VIKOR manner
+    data_norm = VIKOR_normalization(data, w0, PIS, NIS)
+
+    # 3rd step: Optimize Q score and return their associate S and R scores with the weights
+    s_min, r_min, q_min, w_min = optimize_VIKOR(data, data_norm, w0, PIS, NIS, v, L, U, I, J, display, optimal_mode = 'min')
+    s_max, r_max, q_max, w_max = optimize_VIKOR(data, data_norm, w0, PIS, NIS, v, L, U, I, J, display, optimal_mode = 'max')
     
     # Output preparation
-    scores = {'S_min': s_min, 'S_max': s_max,
-              'R_min': r_min, 'R_max': r_max,
-              'Q_min': q_min, 'Q_max': q_max}
-    output_uwVIKOR = {'Ranking': scores, 'Weights_min': w_min, 'Weights_max': w_max}
+    scores = {
+        'S_min': s_min, 'S_max': s_max,
+        'R_min': r_min, 'R_max': r_max,
+        'Q_min': q_min, 'Q_max': q_max
+        }
+    output_UW_VIKOR = {'Ranking': scores, 'Weights_min': w_min, 'Weights_max': w_max}
 
-    return output_uwVIKOR
-
+    return output_UW_VIKOR
