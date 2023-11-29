@@ -1,32 +1,26 @@
 Unweighted VIKOR method
 =======================
+|python-version| |pypi-version| |license| |Downloads|
 
-.. image:: https://static.pepy.tech/personalized-badge/uwvikor?period=total&units=international_system&left_color=black&right_color=orange&left_text=Downloads
- :target: https://pepy.tech/project/uwvikor
+The Unweighted VIKOR method (UW-VIKOR) is a multiple-criteria decision-making (MCDM) technique for ranking alternatives based on the classical VIKOR (*VIseKriterijumska Optimizacija I Kompromisno Resenje*) approach, however this method does not require the introduction of a priori weighting scheme. Instead, the decision-maker only has to determine the bounds $\{(l_j,u_j)\}_{j=1}^{M}$ between which the weights vary, thus reducing the demands on the algorithm.
 
-The Un-Weighted VIseKriterijumska Optimizacija I Kompromisno Resenje (uwVIKOR) ranks decision alternatives based on the classical VIKOR approach, however this method does not require the introduction of a priori weights.
-
-As a consequence of working with unknown weights, the method does not take into account the relative importance of criteria. Then, the positive ideal solution (PIS) and a negative ideal solution (NIS) varies depending on the conditions of problem. Hence, the functions of relative proximity (Q) is an operator which are optimized as two mathematical programming problems of maximize (Q_L) and minimize (Q_U), considering weights as variables. Finally, per each alternative, we get the intervals [Q_L, Q_U], and so [S_L, S_U] and [R_L, R_U], hence we can rank them in accordance with a determined comparison method.
+As a consequence, the weights are considered decision variables in a non-linear mathematical optimization problem that considers the VIKOR $Q$-score as the objective function. The optimization yields two scores subjected to maximize ($Q_{i}^{L}$) and minimize ($Q_{i}^{U}$) the $Q$-score per each alternative as well as the optimal weights attached to them ($W_{i}^{L}$ and $W_{i}^{U}$). Then, per each alternative, we get the score intervals $[S_{i}^{L}$, $S_{i}^{U}]$ and $[R_{i}^{L}, R_{i}^{U}]$ by evaluating them with the optimal weights. Finally, we can rank alternatives using an aggregation function of the $[Q_{i}^{L}, Q_{i}^{U}]$ scores.
 
 Installation
 ======================
 
-You can install the uwVIKOR library from GitHub:
-
-.. code:: sh
+You can install the uwVIKOR library from GitHub::
 
     git clone https://github.com/Aaron-AALG/uwVIKOR.git
     python3 -m pip install -e uwVIKOR
 
 
-You can also install it directly from PyPI:
-
-.. code:: sh
+You can also install it directly from PyPI::
 
     pip install uwVIKOR
 
 
-Input-Output
+Input parameters and Output
 ======================
 
 Input
@@ -34,25 +28,25 @@ Input
 
 * **data**: dataframe which contains the alternatives and the criteria.
 * **directions**: array with the optimal direction of the criteria.
-* **L**: array with the lower bounds of the weigths.
-* **U**: array with the upper bounds of the weigths.
-* **v**: value of the utility parameter. (By default v = 0.5)
-* **w0**: array with the initial guess of the weights. (By default w0 = [])
-* **display**: logical argument to indicate whether to show print convergence messages or not. (By default display = False)
+* **L**: array with the lower bounds of the weights.
+* **U**: array with the upper bounds of the weights.
+* **v**: value of the utility parameter (By default v = 0.5).
+* **w0**: array with the initial guess of the weights (By default w0 = []).
+* **display**: logical argument to indicate whether to show print convergence messages or not (By default display = False).
 
 Output
 ------
 
 Dictionary which contains three keys:
 
-* **Ranking**: List with S, R and Q scores in regard of the optimal weights.
-* **Weights_min**: List with the weights that minimizes the Q score.
-* **Weights_max**: List with the weights that maximizes the Q score.
+* **Ranking**: List with $S$, $R$ and $Q$ scores in regard to the optimal weights.
+* **Weights_min**: List with the weights that minimize the $Q$ score.
+* **Weights_max**: List with the weights that maximize the $Q$ score.
 
 Example
 ======================
 
-uwVIKOR is implemented in order to manage **Pandas** DataFrames as input data which will be converted to **NumPy** arrays. Here is an example in which we only use three alternatives and four criteria:
+The `uwVIKOR` function is implemented in order to manage decision matrices as input data which will be converted to **NumPy** arrays. Here is an example in which three alternatives and four criteria are used:
 
 .. code:: python
 
@@ -71,8 +65,38 @@ uwVIKOR is implemented in order to manage **Pandas** DataFrames as input data wh
 
     x = uwVIKOR(data, directions, L, U, v)
 
+Generalization to classic VIKOR
+-------------------------------
+
+Given that uwVIKOR generalizes VIKOR, we can also compute it by limiting the amplitude of the boundaries. For this function, it is recommended to use the Numpy numerical epsilon as the difference between $L$ and $U$. Here is an example:
+
+.. code:: python
+
+    weights = np.array([0.25, 0.2, 0.2, 0.35])
+    epsilon = np.finfo(float).eps
+
+    try:
+        x = uwVIKOR(data,
+                    directions, 
+                    weights, 
+                    weights + epsilon, 
+                    )
+    except:
+        x = uwVIKOR(data,
+                    directions, 
+                    weights - epsilon, 
+                    weights, 
+                    )
 
 Optimization in Python
 ======================
 
 This library uses the `minimize <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html>`_ function of the scipy.optimize module to carry out the optimization problems. In particular, Q_L and Q_U are obtained one by one, thus we can apply the **SLSQP** method.
+
+
+.. |python-version| image:: https://img.shields.io/badge/python-%3E=3.8-orange.svg
+.. |pypi-version| image:: https://img.shields.io/pypi/v/uwvikor.svg
+   :target: https://pypi.python.org/pypi/uwvikor/
+.. |license| image:: https://img.shields.io/pypi/l/uwvikor.svg
+.. |Downloads| image:: https://static.pepy.tech/personalized-badge/uwvikor?period=total&units=international_system&left_color=grey&right_color=orange&left_text=Downloads
+   :target: https://pepy.tech/project/uwvikor
